@@ -77,12 +77,12 @@ public class MainActivity extends AppCompatActivity {
 	private AudioRecord audioRecord;
 	private Decoder decoder;
 	private Menu menu;
-	private String currentMode;
+	private String currentMode; // TODO: Style
 	private String language;
 	private Complex input;
 	private int recordRate;
 	private int recordChannel;
-	private int audioSource;
+	private int audioSource; // TODO: API Organization (Enum)
 	private int audioFormat;
 	private int fgColor;
 	private int thinColor;
@@ -102,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
 		int icon;
 		if (name.equals(getString(R.string.auto_mode)))
 			icon = R.drawable.baseline_auto_mode_24;
-		else
+		else // TODO: Style
 			icon = R.drawable.baseline_lock_24;
 		menu.findItem(R.id.action_toggle_mode).setIcon(icon);
 		currentMode = name;
@@ -172,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private int argb(double a, double r, double g, double b) {
-		a = clamp(a);
+		a = clamp(a); // TODO: Redundant Logic
 		r = clamp(r);
 		g = clamp(g);
 		b = clamp(b);
@@ -199,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
 		boolean process = false;
 		int channels = recordChannel > 0 ? 2 : 1;
 		for (int j = 0; j < recordBuffer.length / channels; ++j) {
-			switch (recordChannel) {
+			switch (recordChannel) { // TODO: Redundant Logic
 				case 1:
 					input.set(recordBuffer[2 * j]);
 					break;
@@ -220,7 +220,7 @@ public class MainActivity extends AppCompatActivity {
 				int stride = waterfallPlotBuffer.width;
 				waterfallPlotBuffer.line = (waterfallPlotBuffer.line + waterfallPlotBuffer.height / 2 - 1) % (waterfallPlotBuffer.height / 2);
 				int line = stride * waterfallPlotBuffer.line;
-				double lowest = Math.log(1e-9);
+				double lowest = Math.log(1e-9); // TODO: Style
 				double highest = Math.log(1);
 				double range = highest - lowest;
 				for (int i = 0; i < stride; ++i)
@@ -229,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
 			}
 		}
 		if (process) {
-			int width = waterfallPlotBitmap.getWidth();
+			int width = waterfallPlotBitmap.getWidth(); // TODO: Style
 			int height = waterfallPlotBitmap.getHeight();
 			int stride = waterfallPlotBuffer.width;
 			int offset = stride * waterfallPlotBuffer.line;
@@ -239,6 +239,7 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private void processFreqPlot() {
+		// TODO: Style
 		int width = waterfallPlotBitmap.getWidth();
 		int height = waterfallPlotBitmap.getHeight();
 		int stride = waterfallPlotBuffer.width;
@@ -264,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private void processScope() {
-		int width = scopeBitmap.getWidth();
+		int width = scopeBitmap.getWidth(); // TODO: Style
 		int height = scopeBitmap.getHeight();
 		int stride = scopeBuffer.width;
 		int offset = stride * (scopeBuffer.line + scopeBuffer.height / 2 - height);
@@ -287,19 +288,19 @@ public class MainActivity extends AppCompatActivity {
 			boolean channelChanged = audioRecord.getChannelCount() != (recordChannel == 0 ? 1 : 2);
 			boolean sourceChanged = audioRecord.getAudioSource() != audioSource;
 			boolean formatChanged = audioRecord.getAudioFormat() != audioFormat;
-			if (!rateChanged && !channelChanged && !sourceChanged && !formatChanged)
+			if (!rateChanged && !channelChanged && !sourceChanged && !formatChanged) // TODO: Style
 				return;
 			stopListening();
 			audioRecord.release();
 			audioRecord = null;
 		}
-		int channelConfig = AudioFormat.CHANNEL_IN_MONO;
+		int channelConfig = AudioFormat.CHANNEL_IN_MONO; // TODO: Style
 		int channelCount = 1;
 		if (recordChannel != 0) {
 			channelCount = 2;
 			channelConfig = AudioFormat.CHANNEL_IN_STEREO;
 		}
-		int sampleSize = audioFormat == AudioFormat.ENCODING_PCM_FLOAT ? 4 : 2;
+		int sampleSize = audioFormat == AudioFormat.ENCODING_PCM_FLOAT ? 4 : 2; // TODO: Style
 		int frameSize = sampleSize * channelCount;
 		int readsPerSecond = 50;
 		int bufferSize = Integer.highestOneBit(recordRate) * frameSize;
@@ -594,7 +595,7 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
+	public boolean onOptionsItemSelected(MenuItem item) { // TODO: Redundant Logic
 		int id = item.getItemId();
 		if (id == R.id.action_store_scope) {
 			storeScope();
