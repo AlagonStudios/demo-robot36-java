@@ -61,34 +61,18 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
-	private Bitmap scopeBitmap;
-	private PixelBuffer scopeBuffer;
-	private ImageView scopeView;
-	private Bitmap waterfallPlotBitmap;
-	private PixelBuffer waterfallPlotBuffer;
-	private ImageView waterfallPlotView;
-	private Bitmap peakMeterBitmap;
-	private PixelBuffer peakMeterBuffer;
-	private ImageView peakMeterView;
-	private PixelBuffer imageBuffer;
+	private Bitmap scopeBitmap, waterfallPlotBitmap, peakMeterBitmap;
+	private PixelBuffer scopeBuffer, waterfallPlotBuffer, peakMeterBuffer, imageBuffer;
+	private ImageView scopeView, waterfallPlotView, peakMeterView;
 	private ShortTimeFourierTransform stft;
 	private short[] shortBuffer;
 	private float[] recordBuffer;
 	private AudioRecord audioRecord;
 	private Decoder decoder;
 	private Menu menu;
-	private String currentMode; // TODO: Style
-	private String language;
-	private Complex input;
-	private int recordRate;
-	private int recordChannel;
-	private int audioSource; // TODO: API Organization (Enum)
-	private int audioFormat;
-	private int fgColor;
-	private int thinColor;
-	private int tintColor;
-	private boolean autoSave;
-	private boolean showSpectrogram;
+	private String currentMode, language, input;
+	private int recordRate, recordChannel, audioSource, audioFormat, fgColor, thinColor, tintColor;
+	private boolean autoSave, showSpectrogram;
 
 	private void setStatus(int id) {
 		setTitle(id);
@@ -100,11 +84,9 @@ public class MainActivity extends AppCompatActivity {
 
 	private void setMode(String name) {
 		int icon;
-		if (name.equals(getString(R.string.auto_mode)))
-			icon = R.drawable.baseline_auto_mode_24;
-		else // TODO: Style
-			icon = R.drawable.baseline_lock_24;
-		menu.findItem(R.id.action_toggle_mode).setIcon(icon);
+		menu.findItem(R.id.action_toggle_mode)
+				.setIcon(name.equals(getString(R.string.auto_mode)) ? R.drawable.baseline_auto_mode_24
+						: R.drawable.baseline_lock_24);
 		currentMode = name;
 		if (decoder != null)
 			decoder.setMode(currentMode);
@@ -157,13 +139,13 @@ public class MainActivity extends AppCompatActivity {
 		float max = 0;
 		for (float v : recordBuffer)
 			max = Math.max(max, Math.abs(v));
-		int pixels = peakMeterBuffer.height;
-		int peak = pixels;
+		int pixels = peakMeterBuffer.height, peak = pixels;
 		if (max > 0)
 			peak = (int) Math.round(Math.min(Math.max(-Math.PI * Math.log(max), 0), pixels));
 		Arrays.fill(peakMeterBuffer.pixels, 0, peak, thinColor);
 		Arrays.fill(peakMeterBuffer.pixels, peak, pixels, tintColor);
-		peakMeterBitmap.setPixels(peakMeterBuffer.pixels, 0, peakMeterBuffer.width, 0, 0, peakMeterBuffer.width, peakMeterBuffer.height);
+		peakMeterBitmap.setPixels(peakMeterBuffer.pixels, 0, peakMeterBuffer.width, 0, 0, peakMeterBuffer.width,
+				peakMeterBuffer.height);
 		peakMeterView.invalidate();
 	}
 
@@ -172,21 +154,10 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private int argb(double a, double r, double g, double b) {
-		a = clamp(a); // TODO: Redundant Logic
-		r = clamp(r);
-		g = clamp(g);
-		b = clamp(b);
-		r *= a;
-		g *= a;
-		b *= a;
-		r = Math.sqrt(r);
-		g = Math.sqrt(g);
-		b = Math.sqrt(b);
-		int A = (int) Math.rint(255 * a);
-		int R = (int) Math.rint(255 * r);
-		int G = (int) Math.rint(255 * g);
-		int B = (int) Math.rint(255 * b);
-		return (A << 24) | (R << 16) | (G << 8) | B;
+		a = Math.min(1, Math.max(0, a));
+		return ((int) (a * 255 + 0.5) << 24) | ((int) (Math.sqrt(Math.min(1, Math.max(0, r)) * a) * 255 + 0.5) << 16)
+				| ((int) (Math.sqrt(Math.min(1, Math.max(0, g)) * a) * 255 + 0.5) << 8)
+				| (int) (Math.sqrt(Math.min(1, Math.max(0, b)) * a) * 255 + 0.5);
 	}
 
 	private int rainbow(double v) {
@@ -200,39 +171,37 @@ public class MainActivity extends AppCompatActivity {
 		int channels = recordChannel > 0 ? 2 : 1;
 		for (int j = 0; j < recordBuffer.length / channels; ++j) {
 			switch (recordChannel) { // TODO: Redundant Logic
-				case 1:
-					input.set(recordBuffer[2 * j]);
-					break;
-				case 2:
-					input.set(recordBuffer[2 * j + 1]);
-					break;
-				case 3:
-					input.set(recordBuffer[2 * j] + recordBuffer[2 * j + 1]);
-					break;
-				case 4:
-					input.set(recordBuffer[2 * j], recordBuffer[2 * j + 1]);
-					break;
-				default:
-					input.set(recordBuffer[j]);
+			case 1:
+				input.set(recordBuffer[2 * j]);
+				break;
+			case 2:
+				input.set(recordBuffer[2 * j + 1]);
+				break;
+			case 3:
+				input.set(recordBuffer[2 * j] + recordBuffer[2 * j + 1]);
+				break;
+			case 4:
+				input.set(recordBuffer[2 * j], recordBuffer[2 * j + 1]);
+				break;
+			default:
+				input.set(recordBuffer[j]);
 			}
 			if (stft.push(input)) {
 				process = true;
 				int stride = waterfallPlotBuffer.width;
-				waterfallPlotBuffer.line = (waterfallPlotBuffer.line + waterfallPlotBuffer.height / 2 - 1) % (waterfallPlotBuffer.height / 2);
+				waterfallPlotBuffer.line = (waterfallPlotBuffer.line + waterfallPlotBuffer.height / 2 - 1)
+						% (waterfallPlotBuffer.height / 2);
 				int line = stride * waterfallPlotBuffer.line;
-				double lowest = Math.log(1e-9); // TODO: Style
-				double highest = Math.log(1);
-				double range = highest - lowest;
+				double lowest = Math.log(1e-9), highest = Math.log(1), range = highest - lowest;
 				for (int i = 0; i < stride; ++i)
 					waterfallPlotBuffer.pixels[line + i] = rainbow((Math.log(stft.power[i + 14]) - lowest) / range);
-				System.arraycopy(waterfallPlotBuffer.pixels, line, waterfallPlotBuffer.pixels, line + stride * (waterfallPlotBuffer.height / 2), stride);
+				System.arraycopy(waterfallPlotBuffer.pixels, line, waterfallPlotBuffer.pixels,
+						line + stride * (waterfallPlotBuffer.height / 2), stride);
 			}
 		}
 		if (process) {
-			int width = waterfallPlotBitmap.getWidth(); // TODO: Style
-			int height = waterfallPlotBitmap.getHeight();
-			int stride = waterfallPlotBuffer.width;
-			int offset = stride * waterfallPlotBuffer.line;
+			int width = waterfallPlotBitmap.getWidth(), height = waterfallPlotBitmap.getHeight(),
+					stride = waterfallPlotBuffer.width, offset = stride * waterfallPlotBuffer.line;
 			waterfallPlotBitmap.setPixels(waterfallPlotBuffer.pixels, offset, stride, 0, 0, width, height);
 			waterfallPlotView.invalidate();
 		}
@@ -240,14 +209,12 @@ public class MainActivity extends AppCompatActivity {
 
 	private void processFreqPlot() {
 		// TODO: Style
-		int width = waterfallPlotBitmap.getWidth();
-		int height = waterfallPlotBitmap.getHeight();
-		int stride = waterfallPlotBuffer.width;
-		waterfallPlotBuffer.line = (waterfallPlotBuffer.line + waterfallPlotBuffer.height / 2 - 1) % (waterfallPlotBuffer.height / 2);
-		int line = stride * waterfallPlotBuffer.line;
-		int channels = recordChannel > 0 ? 2 : 1;
-		int samples = recordBuffer.length / channels;
-		int spread = 2;
+		int width = waterfallPlotBitmap.getWidth(), height = waterfallPlotBitmap.getHeight(),
+				stride = waterfallPlotBuffer.width;
+		waterfallPlotBuffer.line = (waterfallPlotBuffer.line + waterfallPlotBuffer.height / 2 - 1)
+				% (waterfallPlotBuffer.height / 2);
+		int line = stride * waterfallPlotBuffer.line, channels = recordChannel > 0 ? 2 : 1,
+				samples = recordBuffer.length / channels, spread = 2;
 		Arrays.fill(waterfallPlotBuffer.pixels, line, line + stride, 0);
 		for (int i = 0; i < samples; ++i) {
 			int x = Math.round((recordBuffer[i] + 2.5f) * 0.25f * stride);
@@ -255,20 +222,19 @@ public class MainActivity extends AppCompatActivity {
 				for (int j = -spread; j <= spread; ++j)
 					waterfallPlotBuffer.pixels[line + x + j] += 1 + spread * spread - j * j;
 		}
-		int factor = 960 / samples;
 		for (int i = 0; i < stride; ++i)
-			waterfallPlotBuffer.pixels[line + i] = 0x00FFFFFF & fgColor | Math.min(factor * waterfallPlotBuffer.pixels[line + i], 255) << 24;
-		System.arraycopy(waterfallPlotBuffer.pixels, line, waterfallPlotBuffer.pixels, line + stride * (waterfallPlotBuffer.height / 2), stride);
-		int offset = stride * waterfallPlotBuffer.line;
-		waterfallPlotBitmap.setPixels(waterfallPlotBuffer.pixels, offset, stride, 0, 0, width, height);
+			waterfallPlotBuffer.pixels[line + i] = 0x00FFFFFF & fgColor
+					| Math.min((960 / samples) * waterfallPlotBuffer.pixels[line + i], 255) << 24;
+		System.arraycopy(waterfallPlotBuffer.pixels, line, waterfallPlotBuffer.pixels,
+				line + stride * (waterfallPlotBuffer.height / 2), stride);
+		waterfallPlotBitmap.setPixels(waterfallPlotBuffer.pixels, (stride * waterfallPlotBuffer.line), stride, 0, 0,
+				width, height);
 		waterfallPlotView.invalidate();
 	}
 
 	private void processScope() {
-		int width = scopeBitmap.getWidth(); // TODO: Style
-		int height = scopeBitmap.getHeight();
-		int stride = scopeBuffer.width;
-		int offset = stride * (scopeBuffer.line + scopeBuffer.height / 2 - height);
+		int width = scopeBitmap.getWidth(), height = scopeBitmap.getHeight(), stride = scopeBuffer.width,
+				offset = stride * (scopeBuffer.line + scopeBuffer.height / 2 - height);
 		scopeBitmap.setPixels(scopeBuffer.pixels, offset, stride, 0, 0, width, height);
 		scopeView.invalidate();
 	}
@@ -278,34 +244,31 @@ public class MainActivity extends AppCompatActivity {
 			return;
 		imageBuffer.line = -1;
 		if (autoSave)
-			storeBitmap(Bitmap.createBitmap(imageBuffer.pixels, imageBuffer.width, imageBuffer.height, Bitmap.Config.ARGB_8888));
+			storeBitmap(Bitmap.createBitmap(imageBuffer.pixels, imageBuffer.width, imageBuffer.height,
+					Bitmap.Config.ARGB_8888));
 	}
 
 	private void initAudioRecord() {
 		boolean rateChanged = true;
 		if (audioRecord != null) {
 			rateChanged = audioRecord.getSampleRate() != recordRate;
-			boolean channelChanged = audioRecord.getChannelCount() != (recordChannel == 0 ? 1 : 2);
-			boolean sourceChanged = audioRecord.getAudioSource() != audioSource;
-			boolean formatChanged = audioRecord.getAudioFormat() != audioFormat;
+			boolean channelChanged = audioRecord.getChannelCount() != (recordChannel == 0 ? 1 : 2),
+					sourceChanged = audioRecord.getAudioSource() != audioSource,
+					formatChanged = audioRecord.getAudioFormat() != audioFormat;
 			if (!rateChanged && !channelChanged && !sourceChanged && !formatChanged) // TODO: Style
 				return;
 			stopListening();
 			audioRecord.release();
 			audioRecord = null;
 		}
-		int channelConfig = AudioFormat.CHANNEL_IN_MONO; // TODO: Style
-		int channelCount = 1;
+		int channelConfig = AudioFormat.CHANNEL_IN_MONO, channelCount = 1;
 		if (recordChannel != 0) {
 			channelCount = 2;
 			channelConfig = AudioFormat.CHANNEL_IN_STEREO;
 		}
-		int sampleSize = audioFormat == AudioFormat.ENCODING_PCM_FLOAT ? 4 : 2; // TODO: Style
-		int frameSize = sampleSize * channelCount;
-		int readsPerSecond = 50;
-		int bufferSize = Integer.highestOneBit(recordRate) * frameSize;
-		int frameCount = recordRate / readsPerSecond;
-		int bufferCount = frameCount * channelCount;
+		int sampleSize = audioFormat == AudioFormat.ENCODING_PCM_FLOAT ? 4 : 2, frameSize = sampleSize * channelCount,
+				readsPerSecond = 50, bufferSize = Integer.highestOneBit(recordRate) * frameSize,
+				frameCount = recordRate / readsPerSecond, bufferCount = frameCount * channelCount;
 		recordBuffer = new float[bufferCount];
 		shortBuffer = audioFormat == AudioFormat.ENCODING_PCM_FLOAT ? null : new short[bufferCount];
 		try {
@@ -340,9 +303,8 @@ public class MainActivity extends AppCompatActivity {
 				else
 					audioRecord.read(shortBuffer, 0, recordBuffer.length, AudioRecord.READ_BLOCKING);
 				setStatus(R.string.listening);
-			} else {
+			} else
 				setStatus(R.string.audio_recording_error);
-			}
 		}
 	}
 
@@ -413,77 +375,80 @@ public class MainActivity extends AppCompatActivity {
 
 	private void updateRecordRateMenu() {
 		switch (recordRate) {
-			case 8000:
-				menu.findItem(R.id.action_set_record_rate_8000).setChecked(true);
-				break;
-			case 16000:
-				menu.findItem(R.id.action_set_record_rate_16000).setChecked(true);
-				break;
-			case 32000:
-				menu.findItem(R.id.action_set_record_rate_32000).setChecked(true);
-				break;
-			case 44100:
-				menu.findItem(R.id.action_set_record_rate_44100).setChecked(true);
-				break;
-			case 48000:
-				menu.findItem(R.id.action_set_record_rate_48000).setChecked(true);
-				break;
+		case 8000:
+			menu.findItem(R.id.action_set_record_rate_8000).setChecked(true);
+			break;
+		case 16000:
+			menu.findItem(R.id.action_set_record_rate_16000).setChecked(true);
+			break;
+		case 32000:
+			menu.findItem(R.id.action_set_record_rate_32000).setChecked(true);
+			break;
+		case 44100:
+			menu.findItem(R.id.action_set_record_rate_44100).setChecked(true);
+			break;
+		case 48000:
+			menu.findItem(R.id.action_set_record_rate_48000).setChecked(true);
+			break;
 		}
 	}
 
 	private void updateRecordChannelMenu() {
 		switch (recordChannel) {
-			case 0:
-				menu.findItem(R.id.action_set_record_channel_default).setChecked(true);
-				break;
-			case 1:
-				menu.findItem(R.id.action_set_record_channel_first).setChecked(true);
-				break;
-			case 2:
-				menu.findItem(R.id.action_set_record_channel_second).setChecked(true);
-				break;
-			case 3:
-				menu.findItem(R.id.action_set_record_channel_summation).setChecked(true);
-				break;
-			case 4:
-				menu.findItem(R.id.action_set_record_channel_analytic).setChecked(true);
-				break;
+		case 0:
+			menu.findItem(R.id.action_set_record_channel_default).setChecked(true);
+			break;
+		case 1:
+			menu.findItem(R.id.action_set_record_channel_first).setChecked(true);
+			break;
+		case 2:
+			menu.findItem(R.id.action_set_record_channel_second).setChecked(true);
+			break;
+		case 3:
+			menu.findItem(R.id.action_set_record_channel_summation).setChecked(true);
+			break;
+		case 4:
+			menu.findItem(R.id.action_set_record_channel_analytic).setChecked(true);
+			break;
 		}
 	}
 
 	private void updateAudioSourceMenu() {
 		switch (audioSource) {
-			case MediaRecorder.AudioSource.DEFAULT:
-				menu.findItem(R.id.action_set_source_default).setChecked(true);
-				break;
-			case MediaRecorder.AudioSource.MIC:
-				menu.findItem(R.id.action_set_source_microphone).setChecked(true);
-				break;
-			case MediaRecorder.AudioSource.CAMCORDER:
-				menu.findItem(R.id.action_set_source_camcorder).setChecked(true);
-				break;
-			case MediaRecorder.AudioSource.VOICE_RECOGNITION:
-				menu.findItem(R.id.action_set_source_voice_recognition).setChecked(true);
-				break;
-			case MediaRecorder.AudioSource.UNPROCESSED:
-				menu.findItem(R.id.action_set_source_unprocessed).setChecked(true);
-				break;
+		case MediaRecorder.AudioSource.DEFAULT:
+			menu.findItem(R.id.action_set_source_default).setChecked(true);
+			break;
+		case MediaRecorder.AudioSource.MIC:
+			menu.findItem(R.id.action_set_source_microphone).setChecked(true);
+			break;
+		case MediaRecorder.AudioSource.CAMCORDER:
+			menu.findItem(R.id.action_set_source_camcorder).setChecked(true);
+			break;
+		case MediaRecorder.AudioSource.VOICE_RECOGNITION:
+			menu.findItem(R.id.action_set_source_voice_recognition).setChecked(true);
+			break;
+		case MediaRecorder.AudioSource.UNPROCESSED:
+			menu.findItem(R.id.action_set_source_unprocessed).setChecked(true);
+			break;
 		}
 	}
 
 	private void updateAudioFormatMenu() {
-		menu.findItem(audioFormat == AudioFormat.ENCODING_PCM_FLOAT ? R.id.action_set_floating_point : R.id.action_set_fixed_point).setChecked(true);
+		menu.findItem(audioFormat == AudioFormat.ENCODING_PCM_FLOAT ? R.id.action_set_floating_point
+				: R.id.action_set_fixed_point).setChecked(true);
 	}
 
 	private final int permissionID = 1;
 
 	@Override
-	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+			@NonNull int[] grantResults) {
 		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 		if (requestCode != permissionID)
 			return;
 		for (int i = 0; i < permissions.length; ++i)
-			if (permissions[i].equals(Manifest.permission.RECORD_AUDIO) && grantResults[i] == PackageManager.PERMISSION_GRANTED)
+			if (permissions[i].equals(Manifest.permission.RECORD_AUDIO)
+					&& grantResults[i] == PackageManager.PERMISSION_GRANTED)
 				initAudioRecord();
 	}
 
@@ -516,38 +481,36 @@ public class MainActivity extends AppCompatActivity {
 
 	@Override
 	protected void onCreate(Bundle state) {
-		final int defaultSampleRate = 44100;
-		final int defaultChannelSelect = 0;
-		final int defaultAudioSource = MediaRecorder.AudioSource.MIC;
-		final int defaultAudioFormat = AudioFormat.ENCODING_PCM_16BIT;
-		final boolean defaultAutoSave = true;
-		final boolean defaultShowSpectrogram = true;
+		final int defaultSampleRate = 44100, defaultChannelSelect = 0,
+				defaultAudioSource = MediaRecorder.AudioSource.MIC, defaultAudioFormat = AudioFormat.ENCODING_PCM_16BIT;
+		final boolean defaultAutoSave = true, defaultShowSpectrogram = true;
 		final String defaultLanguage = "system";
-		if (state == null) {
-			SharedPreferences pref = getPreferences(Context.MODE_PRIVATE);
-			AppCompatDelegate.setDefaultNightMode(pref.getInt("nightMode", AppCompatDelegate.getDefaultNightMode()));
-			recordRate = pref.getInt("recordRate", defaultSampleRate);
-			recordChannel = pref.getInt("recordChannel", defaultChannelSelect);
-			audioSource = pref.getInt("audioSource", defaultAudioSource);
-			audioFormat = pref.getInt("audioFormat", defaultAudioFormat);
-			autoSave = pref.getBoolean("autoSave", defaultAutoSave);
-			showSpectrogram = pref.getBoolean("showSpectrogram", defaultShowSpectrogram);
-			language = pref.getString("language", defaultLanguage);
-		} else {
-			AppCompatDelegate.setDefaultNightMode(state.getInt("nightMode", AppCompatDelegate.getDefaultNightMode()));
-			recordRate = state.getInt("recordRate", defaultSampleRate);
-			recordChannel = state.getInt("recordChannel", defaultChannelSelect);
-			audioSource = state.getInt("audioSource", defaultAudioSource);
-			audioFormat = state.getInt("audioFormat", defaultAudioFormat);
-			autoSave = state.getBoolean("autoSave", defaultAutoSave);
-			showSpectrogram = state.getBoolean("showSpectrogram", defaultShowSpectrogram);
-			language = state.getString("language", defaultLanguage);
-		}
+		int nightMode = state == null
+				? getPreferences(Context.MODE_PRIVATE).getInt("nightMode", AppCompatDelegate.getDefaultNightMode())
+				: state.getInt("nightMode", AppCompatDelegate.getDefaultNightMode());
+		AppCompatDelegate.setDefaultNightMode(nightMode);
+		recordRate = state == null ? getPreferences(Context.MODE_PRIVATE).getInt("recordRate", defaultSampleRate)
+				: state.getInt("recordRate", defaultSampleRate);
+		recordChannel = state == null
+				? getPreferences(Context.MODE_PRIVATE).getInt("recordChannel", defaultChannelSelect)
+				: state.getInt("recordChannel", defaultChannelSelect);
+		audioSource = state == null ? getPreferences(Context.MODE_PRIVATE).getInt("audioSource", defaultAudioSource)
+				: state.getInt("audioSource", defaultAudioSource);
+		audioFormat = state == null ? getPreferences(Context.MODE_PRIVATE).getInt("audioFormat", defaultAudioFormat)
+				: state.getInt("audioFormat", defaultAudioFormat);
+		autoSave = state == null ? getPreferences(Context.MODE_PRIVATE).getBoolean("autoSave", defaultAutoSave)
+				: state.getBoolean("autoSave", defaultAutoSave);
+		showSpectogram = state == null
+				? getPreferences(Context.MODE_PRIVATE).getBoolean("showSpectrogram", defaultShowSpectrogram)
+				: state.getBoolean("showSpectrogram", defaultShowSpectrogram);
+		language = state == null ? getPreferences(Context.MODE_PRIVATE).getString("language", defaultLanguage)
+				: state.getString("language", defaultLanguage);
 		super.onCreate(state);
 		setLanguage(language);
 		Configuration config = getResources().getConfiguration();
 		EdgeToEdge.enable(this);
-		setContentView(config.orientation == Configuration.ORIENTATION_LANDSCAPE ? R.layout.activity_main_land : R.layout.activity_main);
+		setContentView(config.orientation == Configuration.ORIENTATION_LANDSCAPE ? R.layout.activity_main_land
+				: R.layout.activity_main);
 		handleInsets();
 		fgColor = getColor(R.color.fg);
 		thinColor = getColor(R.color.thin);
@@ -561,13 +524,15 @@ public class MainActivity extends AppCompatActivity {
 		createWaterfallPlot(config);
 		createPeakMeter();
 		List<String> permissions = new ArrayList<>();
-		if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+		if (ContextCompat.checkSelfPermission(this,
+				Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
 			permissions.add(Manifest.permission.RECORD_AUDIO);
 			setStatus(R.string.audio_permission_denied);
 		} else {
 			initAudioRecord();
 		}
-		if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P && ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+		if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P && ContextCompat.checkSelfPermission(this,
+				Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
 			permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
 		if (!permissions.isEmpty())
 			ActivityCompat.requestPermissions(this, permissions.toArray(new String[0]), permissionID);
@@ -819,28 +784,22 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private void storeScope() {
-		int width = scopeBuffer.width;
-		int height = scopeBuffer.height / 2;
 		int stride = scopeBuffer.width;
-		int offset = stride * scopeBuffer.line;
-		storeBitmap(Bitmap.createBitmap(scopeBuffer.pixels, offset, stride, width, height, Bitmap.Config.ARGB_8888));
+		storeBitmap(Bitmap.createBitmap(scopeBuffer.pixels, stride * scopeBuffer.line, stride, scopeBuffer.width,
+				scopeBuffer.height / 2, Bitmap.Config.ARGB_8888));
 	}
 
 	private void createScope(Configuration config) {
-		int screenWidthDp = config.screenWidthDp;
-		int screenHeightDp = config.screenHeightDp;
-		int waterfallPlotHeightDp = 64;
+		int screenWidthDp = config.screenWidthDp, screenHeightDp = config.screenHeightDp, waterfallPlotHeightDp = 64;
 		if (config.orientation == Configuration.ORIENTATION_LANDSCAPE)
 			screenWidthDp /= 2;
 		else
 			screenHeightDp -= waterfallPlotHeightDp;
-		int actionBarHeightDp = 64;
+		int actionBarHeightDp = 64, width = scopeBuffer.width;
 		screenHeightDp -= actionBarHeightDp;
-		int width = scopeBuffer.width;
-		int height = Math.min(Math.max((width * screenHeightDp) / screenWidthDp, 496), scopeBuffer.height / 2);
+		int height = Math.min(Math.max((width * screenHeightDp) / screenWidthDp, 496), scopeBuffer.height / 2),
+				stride = scopeBuffer.width, offset = stride * (scopeBuffer.line + scopeBuffer.height / 2 - height);
 		scopeBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-		int stride = scopeBuffer.width;
-		int offset = stride * (scopeBuffer.line + scopeBuffer.height / 2 - height);
 		scopeBitmap.setPixels(scopeBuffer.pixels, offset, stride, 0, 0, width, height);
 		scopeView = findViewById(R.id.scope);
 		scopeView.setScaleType(ImageView.ScaleType.FIT_CENTER);
@@ -848,13 +807,11 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private void createWaterfallPlot(Configuration config) {
-		int width = waterfallPlotBuffer.width;
-		int height = waterfallPlotBuffer.height / 2;
+		int width = waterfallPlotBuffer.width, height = waterfallPlotBuffer.height / 2,
+				stride = waterfallPlotBuffer.width, offset = stride * waterfallPlotBuffer.line;
 		if (config.orientation != Configuration.ORIENTATION_LANDSCAPE)
 			height /= 4;
 		waterfallPlotBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-		int stride = waterfallPlotBuffer.width;
-		int offset = stride * waterfallPlotBuffer.line;
 		waterfallPlotBitmap.setPixels(waterfallPlotBuffer.pixels, offset, stride, 0, 0, width, height);
 		waterfallPlotView = findViewById(R.id.waterfall_plot);
 		waterfallPlotView.setScaleType(ImageView.ScaleType.FIT_XY);
@@ -863,7 +820,8 @@ public class MainActivity extends AppCompatActivity {
 
 	private void createPeakMeter() {
 		peakMeterBitmap = Bitmap.createBitmap(peakMeterBuffer.width, peakMeterBuffer.height, Bitmap.Config.ARGB_8888);
-		peakMeterBitmap.setPixels(peakMeterBuffer.pixels, 0, peakMeterBuffer.width, 0, 0, peakMeterBuffer.width, peakMeterBuffer.height);
+		peakMeterBitmap.setPixels(peakMeterBuffer.pixels, 0, peakMeterBuffer.width, 0, 0, peakMeterBuffer.width,
+				peakMeterBuffer.height);
 		peakMeterView = findViewById(R.id.peak_meter);
 		peakMeterView.setScaleType(ImageView.ScaleType.FIT_XY);
 		peakMeterView.setImageBitmap(peakMeterBitmap);
@@ -872,7 +830,8 @@ public class MainActivity extends AppCompatActivity {
 	@Override
 	public void onConfigurationChanged(@NonNull Configuration config) {
 		super.onConfigurationChanged(config);
-		setContentView(config.orientation == Configuration.ORIENTATION_LANDSCAPE ? R.layout.activity_main_land : R.layout.activity_main);
+		setContentView(config.orientation == Configuration.ORIENTATION_LANDSCAPE ? R.layout.activity_main_land
+				: R.layout.activity_main);
 		handleInsets();
 		createScope(config);
 		createWaterfallPlot(config);
@@ -949,7 +908,8 @@ public class MainActivity extends AppCompatActivity {
 		Intent intent = new Intent(Intent.ACTION_SEND);
 		intent.putExtra(Intent.EXTRA_STREAM, uri);
 		intent.setType("image/png");
-		ShareActionProvider share = (ShareActionProvider) MenuItemCompat.getActionProvider(menu.findItem(R.id.menu_item_share));
+		ShareActionProvider share = (ShareActionProvider) MenuItemCompat
+				.getActionProvider(menu.findItem(R.id.menu_item_share));
 		if (share != null)
 			share.setShareIntent(intent);
 		showToast(name);
