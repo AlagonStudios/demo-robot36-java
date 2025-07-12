@@ -154,10 +154,9 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private int argb(double a, double r, double g, double b) {
-		a = Math.min(1, Math.max(0, a));
-		return ((int) (a * 255 + 0.5) << 24) | ((int) (Math.sqrt(Math.min(1, Math.max(0, r)) * a) * 255 + 0.5) << 16)
-				| ((int) (Math.sqrt(Math.min(1, Math.max(0, g)) * a) * 255 + 0.5) << 8)
-				| (int) (Math.sqrt(Math.min(1, Math.max(0, b)) * a) * 255 + 0.5);
+		a = clamp(a);
+		return ((int) (a * 255 + 0.5) << 24) | ((int) (Math.sqrt(clamp(r) * a) * 255 + 0.5) << 16)
+				| ((int) (Math.sqrt(clamp(g) * a) * 255 + 0.5) << 8) | (int) (Math.sqrt(clamp(b) * a) * 255 + 0.5);
 	}
 
 	private int rainbow(double v) {
