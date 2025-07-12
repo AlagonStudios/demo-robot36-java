@@ -58,6 +58,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -155,8 +156,8 @@ public class MainActivity extends AppCompatActivity {
 
 	private int argb(double a, double r, double g, double b) {
 		a = clamp(a);
-		return ((int) (a * 255 + 0.5) << 24) | ((int) (Math.sqrt(clamp(r) * a) * 255 + 0.5) << 16)
-				| ((int) (Math.sqrt(clamp(g) * a) * 255 + 0.5) << 8) | (int) (Math.sqrt(clamp(b) * a) * 255 + 0.5);
+		return (int) (a * 255 + 0.5) << 24 | (int) (Math.sqrt(clamp(r) * a) * 255 + 0.5) << 16
+				| (int) (Math.sqrt(clamp(g) * a) * 255 + 0.5) << 8 | (int) (Math.sqrt(clamp(b) * a) * 255 + 0.5);
 	}
 
 	private int rainbow(double v) {
