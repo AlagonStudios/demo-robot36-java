@@ -355,10 +355,8 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private void updateWaterfallPlotMenu() {
-		if (showSpectrogram)
-			menu.findItem(R.id.action_show_spectrogram).setChecked(true);
-		else
-			menu.findItem(R.id.action_show_frequency_plot).setChecked(true);
+		menu.findItem(showSpectrogram ? R.id.action_show_spectrogram : R.id.action_show_frequency_plot)
+				.setChecked(true);
 	}
 
 	private void setAutoSave(boolean newAutoSave) {
@@ -369,10 +367,7 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private void updateAutoSaveMenu() {
-		if (autoSave)
-			menu.findItem(R.id.action_enable_auto_save).setChecked(true);
-		else
-			menu.findItem(R.id.action_disable_auto_save).setChecked(true);
+		menu.findItem(autoSave ? R.id.action_enable_auto_save : R.id.action_disable_auto_save).setChecked(true);
 	}
 
 	private void updateRecordRateMenu() {
@@ -396,23 +391,11 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private void updateRecordChannelMenu() {
-		switch (recordChannel) {
-		case 0:
-			menu.findItem(R.id.action_set_record_channel_default).setChecked(true);
-			break;
-		case 1:
-			menu.findItem(R.id.action_set_record_channel_first).setChecked(true);
-			break;
-		case 2:
-			menu.findItem(R.id.action_set_record_channel_second).setChecked(true);
-			break;
-		case 3:
-			menu.findItem(R.id.action_set_record_channel_summation).setChecked(true);
-			break;
-		case 4:
-			menu.findItem(R.id.action_set_record_channel_analytic).setChecked(true);
-			break;
-		}
+		int[] items = { R.id.action_set_record_channel_default, R.id.action_set_record_channel_first,
+				R.id.action_set_record_channel_second, R.id.action_set_record_channel_summation,
+				R.id.action_set_record_channel_analytic };
+		if (recordChannel < items.length || recordChannel >= 0)
+			menu.findItem(items[recordChannel]).setChecked(true);
 	}
 
 	private void updateAudioSourceMenu() {
