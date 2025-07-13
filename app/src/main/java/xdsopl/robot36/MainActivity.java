@@ -226,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
 		}
 		for (int i = 0; i < stride; ++i)
 			waterfallPlotBuffer.pixels[line + i] = 0x00FFFFFF & fgColor
-					| Math.min((960 / samples) * waterfallPlotBuffer.pixels[line + i], 255) << 24;
+					| Math.min(960 / samples * waterfallPlotBuffer.pixels[line + i], 255) << 24;
 		System.arraycopy(waterfallPlotBuffer.pixels, line, waterfallPlotBuffer.pixels,
 				line + stride * (waterfallPlotBuffer.height / 2), stride);
 		waterfallPlotBitmap.setPixels(waterfallPlotBuffer.pixels, (stride * waterfallPlotBuffer.line), stride, 0, 0,
